@@ -230,7 +230,7 @@ tika:
 # Configure database URL для PostgreSQL
 databaseUrl: "postgresql://open-webui:0p3n-w3bu!@open-webui-postgres:5432/open-webui"
 
-# Postgresql configuration  
+# Postgresql configuration
 postgresql:
   enabled: true  # ВКЛЮЧАЕМ PostgreSQL!
   fullnameOverride: open-webui-postgres
@@ -251,11 +251,25 @@ postgresql:
       limits:
         memory: "4Gi"  # 4GB для PostgreSQL
         cpu: "2000m"   # 2 CPU cores
-    
+
     # Node placement
     nodeSelector:
       node: pve
 
-# Configure Application logging levels 
+# Configure Application logging levels
 logging:
   level: "info"  # Логирование для дебаггинга
+
+# ==============================================
+# INGRESS - ВКЛЮЧАЕМ ДЛЯ NGINX!
+# ==============================================
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: {}
+
+  host: "ai.local"
+  additionalHosts: []
+  tls: false
+  existingSecret: ""
+  extraLabels: {}
