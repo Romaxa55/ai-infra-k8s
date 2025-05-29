@@ -4,7 +4,7 @@ fullnameOverride: "mlflow"
 
 # Node selection
 nodeSelector:
-  node-type: worker
+  node: pve
 
 # Tolerations for master node
 tolerations:
@@ -30,9 +30,9 @@ service:
 # Ingress
 ingress:
   enabled: true
-  className: "nginx"
+  className: "traefik"
   annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    traefik.ingress.kubernetes.io/router.entrypoints: web
   hosts:
     - host: mlflow.local
       paths:
@@ -48,7 +48,7 @@ postgresql:
     database: "mlflow"
   primary:
     nodeSelector:
-      node-type: worker
+      node: pve
     tolerations:
       - key: node-role
         operator: Equal

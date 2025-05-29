@@ -1,11 +1,10 @@
 # JupyterHub Helm Chart Values
-nameOverride: "jupyterhub"
 fullnameOverride: "jupyterhub"
 
 # Hub configuration
 hub:
   nodeSelector:
-    node-type: worker
+    node: pve
   tolerations:
     - key: node-role
       operator: Equal
@@ -19,7 +18,12 @@ hub:
       memory: "2Gi"
       cpu: "1000m"
   
-  # Database
+  config:
+    JupyterHub:
+      authenticator_class: dummy
+    DummyAuthenticator:
+      password: "ai-infra-password"
+  
   db:
     pvc:
       storageClassName: "longhorn-ssd"
@@ -29,42 +33,36 @@ hub:
 
 # Proxy configuration
 proxy:
-  nodeSelector:
-    node-type: worker
-  tolerations:
-    - key: node-role
-      operator: Equal
-      value: backup
-      effect: NoSchedule
+  chp:
+    nodeSelector:
+      node: pve
+    tolerations:
+      - key: node-role
+        operator: Equal
+        value: backup
+        effect: NoSchedule
   service:
     type: ClusterIP
-  
-  # Ingress
-  ingress:
-    enabled: true
-    ingressClassName: "nginx"
-    annotations:
-      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
-    hosts:
-      - jupyter.local
-    tls: []
+
+# Ingress
+ingress:
+  enabled: true
+  ingressClassName: "traefik"
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+  hosts:
+    - jupyter.local
+  tls: []
 
 # Single user server configuration
 singleuser:
   nodeSelector:
-    node-type: worker
-  tolerations:
-    - key: node-role
-      operator: Equal
-      value: backup
-      effect: NoSchedule
+    node: pve
   
-  # Default image with GPU support
   image:
     name: jupyter/tensorflow-notebook
     tag: latest
   
-  # Resources with GPU
   cpu:
     limit: 2
     guarantee: 0.5
@@ -72,14 +70,6 @@ singleuser:
     limit: 4G
     guarantee: 1G
   
-  # GPU support
-  extraResource:
-    limits:
-      nvidia.com/gpu: "1"
-    guarantees:
-      nvidia.com/gpu: "1"
-  
-  # Storage
   storage:
     type: dynamic
     dynamic:
@@ -90,10 +80,7 @@ singleuser:
         - ReadWriteOnce
     capacity: 50Gi
   
-  # Default environment
   defaultUrl: "/lab"
-  
-  # Security
   uid: 1000
   fsGid: 1000
 
@@ -105,14 +92,8 @@ scheduling:
   podPriority:
     enabled: false
 
-# Authentication (simple for now)
-auth:
-  type: dummy
-  dummy:
-    password: "ai-infra-password"
-
 # Culling idle servers
 cull:
   enabled: true
-  timeout: 3600  # 1 hour
-  every: 600     # check every 10 minutes 
+  timeout: 3600
+  every: 600 

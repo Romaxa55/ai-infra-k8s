@@ -7,7 +7,7 @@ namespace: ai-infra
 
 # Node selection
 nodeSelector:
-  node-type: worker
+  node: pve
 
 # Tolerations for master node
 tolerations:
@@ -19,11 +19,11 @@ tolerations:
 # Resources
 resources:
   requests:
-    memory: "1Gi"
-    cpu: "500m"
+    memory: "512Mi"
+    cpu: "250m"
   limits:
-    memory: "4Gi"
-    cpu: "2000m"
+    memory: "2Gi"
+    cpu: "1000m"
 
 # Persistence
 persistence:
@@ -42,20 +42,16 @@ service:
 env:
   OLLAMA_BASE_URL: "http://ollama.ai-infra.svc.cluster.local:11434"
   WEBUI_SECRET_KEY: "ai-infra-secret-key"
+  WEBUI_AUTH: "false"
 
-# Ingress
+# Ingress (правильная структура для Open WebUI chart)
 ingress:
   enabled: true
-  className: "nginx"
+  class: "nginx"
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
-  hosts:
-    - host: ai.local
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []
+  host: "ai.local"
+  tls: false
 
 # Security context
 securityContext:
@@ -67,15 +63,15 @@ securityContext:
 livenessProbe:
   enabled: true
   httpGet:
-    path: /
+    path: /health
     port: 8080
-  initialDelaySeconds: 60
+  initialDelaySeconds: 30
   periodSeconds: 30
 
 readinessProbe:
   enabled: true
   httpGet:
-    path: /
+    path: /health
     port: 8080
-  initialDelaySeconds: 30
+  initialDelaySeconds: 15
   periodSeconds: 10 

@@ -5,9 +5,12 @@ fullnameOverride: "ollama"
 # Namespace
 namespace: ai-infra
 
-# Node selection
+# Node selection (как у Frigate)
 nodeSelector:
-  node-type: worker
+  node: pve
+
+# Runtime class для GPU
+runtimeClassName: nvidia
 
 # Tolerations for master node
 tolerations:
@@ -16,16 +19,14 @@ tolerations:
     value: backup
     effect: NoSchedule
 
-# Resources with GPU
+# Resources без GPU (GPU доступен через runtimeClassName)
 resources:
   requests:
     memory: "2Gi"
     cpu: "1000m"
-    nvidia.com/gpu: 1
   limits:
     memory: "8Gi"
     cpu: "4000m"
-    nvidia.com/gpu: 1
 
 # Persistence
 persistence:
@@ -44,12 +45,6 @@ service:
 env:
   OLLAMA_HOST: "0.0.0.0"
   OLLAMA_ORIGINS: "*"
-
-# Security context
-securityContext:
-  runAsUser: 1000
-  runAsGroup: 1000
-  fsGroup: 1000
 
 # Probes
 livenessProbe:
