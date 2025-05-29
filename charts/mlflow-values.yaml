@@ -1,0 +1,81 @@
+# MLflow Helm Chart Values
+nameOverride: "mlflow"
+fullnameOverride: "mlflow"
+
+# Node selection
+nodeSelector:
+  node-type: worker
+
+# Tolerations for master node
+tolerations:
+  - key: node-role
+    operator: Equal
+    value: backup
+    effect: NoSchedule
+
+# Resources
+resources:
+  requests:
+    memory: "1Gi"
+    cpu: "500m"
+  limits:
+    memory: "4Gi"
+    cpu: "2000m"
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 5000
+
+# Ingress
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+  hosts:
+    - host: mlflow.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Backend store (PostgreSQL)
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "mlflow-postgres-password"
+    database: "mlflow"
+  primary:
+    nodeSelector:
+      node-type: worker
+    tolerations:
+      - key: node-role
+        operator: Equal
+        value: backup
+        effect: NoSchedule
+    persistence:
+      enabled: true
+      storageClass: "longhorn-ssd"
+      size: 50Gi
+
+# Artifact store (MinIO S3)
+artifactStore:
+  s3:
+    enabled: true
+    bucket: "artifacts"
+    endpoint: "http://minio.ai-infra.svc.cluster.local:9000"
+    accessKeyId: "admin"
+    secretAccessKey: "ai-infra-minio-password"
+
+# Environment variables
+env:
+  MLFLOW_S3_ENDPOINT_URL: "http://minio.ai-infra.svc.cluster.local:9000"
+  AWS_ACCESS_KEY_ID: "admin"
+  AWS_SECRET_ACCESS_KEY: "ai-infra-minio-password"
+
+# Security context
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000 

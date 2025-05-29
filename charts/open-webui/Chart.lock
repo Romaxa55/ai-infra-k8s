@@ -1,0 +1,18 @@
+dependencies:
+- name: ollama
+  repository: https://otwld.github.io/ollama-helm/
+  version: 1.18.0
+- name: pipelines
+  repository: https://helm.openwebui.com
+  version: 0.7.0
+- name: tika
+  repository: https://apache.jfrog.io/artifactory/tika
+  version: 2.9.0
+- name: redis
+  repository: https://charts.bitnami.com/bitnami
+  version: 21.1.8
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 16.7.5
+digest: sha256:631b70344dbc30bd3ddfc1e95405b9245a1218f7991ffe2905c0a47980c3bfce
+generated: "2025-05-28T02:01:53.857049+02:00"

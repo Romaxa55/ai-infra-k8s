@@ -1,0 +1,118 @@
+# JupyterHub Helm Chart Values
+nameOverride: "jupyterhub"
+fullnameOverride: "jupyterhub"
+
+# Hub configuration
+hub:
+  nodeSelector:
+    node-type: worker
+  tolerations:
+    - key: node-role
+      operator: Equal
+      value: backup
+      effect: NoSchedule
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+  
+  # Database
+  db:
+    pvc:
+      storageClassName: "longhorn-ssd"
+      accessModes:
+        - ReadWriteOnce
+      storage: 20Gi
+
+# Proxy configuration
+proxy:
+  nodeSelector:
+    node-type: worker
+  tolerations:
+    - key: node-role
+      operator: Equal
+      value: backup
+      effect: NoSchedule
+  service:
+    type: ClusterIP
+  
+  # Ingress
+  ingress:
+    enabled: true
+    ingressClassName: "nginx"
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    hosts:
+      - jupyter.local
+    tls: []
+
+# Single user server configuration
+singleuser:
+  nodeSelector:
+    node-type: worker
+  tolerations:
+    - key: node-role
+      operator: Equal
+      value: backup
+      effect: NoSchedule
+  
+  # Default image with GPU support
+  image:
+    name: jupyter/tensorflow-notebook
+    tag: latest
+  
+  # Resources with GPU
+  cpu:
+    limit: 2
+    guarantee: 0.5
+  memory:
+    limit: 4G
+    guarantee: 1G
+  
+  # GPU support
+  extraResource:
+    limits:
+      nvidia.com/gpu: "1"
+    guarantees:
+      nvidia.com/gpu: "1"
+  
+  # Storage
+  storage:
+    type: dynamic
+    dynamic:
+      storageClass: "longhorn-ssd"
+      pvcNameTemplate: "jupyter-{username}"
+      volumeNameTemplate: "jupyter-{username}"
+      storageAccessModes:
+        - ReadWriteOnce
+    capacity: 50Gi
+  
+  # Default environment
+  defaultUrl: "/lab"
+  
+  # Security
+  uid: 1000
+  fsGid: 1000
+
+# Scheduling configuration
+scheduling:
+  userScheduler:
+    enabled: false
+  
+  podPriority:
+    enabled: false
+
+# Authentication (simple for now)
+auth:
+  type: dummy
+  dummy:
+    password: "ai-infra-password"
+
+# Culling idle servers
+cull:
+  enabled: true
+  timeout: 3600  # 1 hour
+  every: 600     # check every 10 minutes 

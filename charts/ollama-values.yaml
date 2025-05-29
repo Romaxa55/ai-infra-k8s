@@ -1,0 +1,69 @@
+# Ollama Helm Chart Values
+nameOverride: "ollama"
+fullnameOverride: "ollama"
+
+# Namespace
+namespace: ai-infra
+
+# Node selection
+nodeSelector:
+  node-type: worker
+
+# Tolerations for master node
+tolerations:
+  - key: node-role
+    operator: Equal
+    value: backup
+    effect: NoSchedule
+
+# Resources with GPU
+resources:
+  requests:
+    memory: "2Gi"
+    cpu: "1000m"
+    nvidia.com/gpu: 1
+  limits:
+    memory: "8Gi"
+    cpu: "4000m"
+    nvidia.com/gpu: 1
+
+# Persistence
+persistence:
+  enabled: true
+  storageClass: "longhorn-ssd"
+  size: 200Gi
+  accessModes:
+    - ReadWriteOnce
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 11434
+
+# Environment variables
+env:
+  OLLAMA_HOST: "0.0.0.0"
+  OLLAMA_ORIGINS: "*"
+
+# Security context
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+# Probes
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /
+    port: 11434
+  initialDelaySeconds: 60
+  periodSeconds: 30
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /
+    port: 11434
+  initialDelaySeconds: 30
+  periodSeconds: 10 

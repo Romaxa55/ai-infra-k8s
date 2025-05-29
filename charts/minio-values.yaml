@@ -1,0 +1,74 @@
+# MinIO Helm Chart Values
+nameOverride: "minio"
+fullnameOverride: "minio"
+
+# Mode - standalone for single node
+mode: standalone
+
+# Node selection
+nodeSelector:
+  node-type: worker
+
+# Tolerations for master node
+tolerations:
+  - key: node-role
+    operator: Equal
+    value: backup
+    effect: NoSchedule
+
+# Resources
+resources:
+  requests:
+    memory: "1Gi"
+    cpu: "500m"
+  limits:
+    memory: "4Gi"
+    cpu: "2000m"
+
+# Persistence
+persistence:
+  enabled: true
+  storageClass: "longhorn-ssd"
+  size: 200Gi
+  accessMode: ReadWriteOnce
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 9000
+  consolePort: 9001
+
+# Console ingress
+consoleIngress:
+  enabled: true
+  ingressClassName: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "1000m"
+  hosts:
+    - minio.local
+  tls: []
+
+# API ingress
+ingress:
+  enabled: true
+  ingressClassName: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "1000m"
+  hosts:
+    - minio-api.local
+  tls: []
+
+# Default credentials
+auth:
+  rootUser: "admin"
+  rootPassword: "ai-infra-minio-password"
+
+# Default buckets
+defaultBuckets: "models,datasets,artifacts"
+
+# Security context
+securityContext:
+  enabled: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000 

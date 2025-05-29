@@ -1,0 +1,81 @@
+# Open WebUI Helm Chart Values
+nameOverride: "open-webui"
+fullnameOverride: "open-webui"
+
+# Namespace
+namespace: ai-infra
+
+# Node selection
+nodeSelector:
+  node-type: worker
+
+# Tolerations for master node
+tolerations:
+  - key: node-role
+    operator: Equal
+    value: backup
+    effect: NoSchedule
+
+# Resources
+resources:
+  requests:
+    memory: "1Gi"
+    cpu: "500m"
+  limits:
+    memory: "4Gi"
+    cpu: "2000m"
+
+# Persistence
+persistence:
+  enabled: true
+  storageClass: "longhorn-ssd"
+  size: 20Gi
+  accessModes:
+    - ReadWriteOnce
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 8080
+
+# Environment variables
+env:
+  OLLAMA_BASE_URL: "http://ollama.ai-infra.svc.cluster.local:11434"
+  WEBUI_SECRET_KEY: "ai-infra-secret-key"
+
+# Ingress
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+  hosts:
+    - host: ai.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+# Security context
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+
+# Probes
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /
+    port: 8080
+  initialDelaySeconds: 60
+  periodSeconds: 30
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10 
