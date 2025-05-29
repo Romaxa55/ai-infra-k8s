@@ -3,10 +3,10 @@
 # МАКСИМАЛЬНАЯ МОЩНОСТЬ: 96GB RAM + 40 CPU cores
 
 # ==============================================
-# OLLAMA ИНТЕГРАЦИЯ - ВКЛЮЧАЕМ ОБРАТНО!
+# OLLAMA ИНТЕГРАЦИЯ - ОТКЛЮЧАЕМ EMBEDDED!
 # ==============================================
 ollama:
-  enabled: true  # ВКЛЮЧАЕМ встроенный Ollama!
+  enabled: false  # ОТКЛЮЧАЕМ встроенный Ollama, используем standalone!
 
   # GPU конфигурация - ПРАВИЛЬНЫЙ ФОРМАТ!
   gpu:
@@ -38,23 +38,10 @@ ollama:
       - ReadWriteOnce
 
 # ==============================================
-# PIPELINES - AI РАСШИРЕНИЯ
+# PIPELINES - AI РАСШИРЕНИЯ (ОТКЛЮЧЕНО ВРЕМЕННО)
 # ==============================================
 pipelines:
-  enabled: true
-
-  # ⚡ Pipelines Resources
-  resources:
-    requests:
-      memory: "1Gi"
-      cpu: "500m"
-    limits:
-      memory: "8Gi"
-      cpu: "4000m"
-
-  # Node Placement - ТОЛЬКО СЕЛЕКТОР!
-  nodeSelector:
-    node: pve
+  enabled: false
 
 # ==============================================
 # REDIS - ПРОИЗВОДИТЕЛЬНОСТЬ
@@ -97,10 +84,10 @@ resources:
 nodeSelector:
   node: pve
 
-# 💾 Open WebUI Storage - больше места!
+# 💾 Open WebUI Storage - уменьшаем для экономии места!
 persistence:
   enabled: true
-  size: 100Gi  # 100GB для файлов, чатов, embeddings
+  size: 50Gi  # 50GB для файлов, чатов, embeddings
   storageClass: "longhorn-ssd"
   accessModes:
     - ReadWriteOnce
@@ -137,9 +124,9 @@ extraEnvVars:
   - name: OLLAMA_DEBUG
     value: "1"
 
-  # ПОДКЛЮЧЕНИЕ К ВСТРОЕННОМУ OLLAMA!
+  # ПОДКЛЮЧЕНИЕ К STANDALONE OLLAMA!
   - name: OLLAMA_BASE_URL
-    value: "http://open-webui-ollama:11434"
+    value: "http://ollama-standalone:11434"
   - name: ENABLE_OLLAMA_API
     value: "True"
 
