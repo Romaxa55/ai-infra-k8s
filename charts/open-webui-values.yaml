@@ -1,83 +1,274 @@
-# Open WebUI Helm Chart Values
-nameOverride: "open-webui"
-fullnameOverride: "open-webui"
+# Open WebUI с подключением к Standalone Ollama
+# Оптимизировано для AI Infrastructure на Kubernetes
+# МАКСИМАЛЬНАЯ МОЩНОСТЬ: 96GB RAM + 40 CPU cores
 
-# Image configuration
+# ==============================================
+# OLLAMA ИНТЕГРАЦИЯ - ВКЛЮЧАЕМ ОБРАТНО!
+# ==============================================
+ollama:
+  enabled: true  # ВКЛЮЧАЕМ встроенный Ollama!
+
+  # GPU конфигурация - ПРАВИЛЬНЫЙ ФОРМАТ!
+  gpu:
+    enabled: true
+    type: 'nvidia'
+    number: 1
+
+  # Автоматические модели
+  models: {}
+
+  # Runtime class - ВНУТРИ ollama секции!
+  runtimeClassName: nvidia
+
+  # Ресурсы - нормальные
+  resources:
+    requests:
+      memory: "8Gi"
+      cpu: "4000m"
+    limits:
+      memory: "80Gi"
+      cpu: "35000m"
+
+  # Storage - УВЕЛИЧИВАЕМ ДО 400GB ДЛЯ БОЛЬШИХ МОДЕЛЕЙ!
+  persistentVolume:
+    enabled: true
+    storageClass: "longhorn-ssd"
+    size: 400Gi
+    accessModes:
+      - ReadWriteOnce
+
+# ==============================================
+# PIPELINES - AI РАСШИРЕНИЯ
+# ==============================================
+pipelines:
+  enabled: true
+
+  # ⚡ Pipelines Resources
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "8Gi"
+      cpu: "4000m"
+
+  # Node Placement - ТОЛЬКО СЕЛЕКТОР!
+  nodeSelector:
+    node: pve
+
+# ==============================================
+# REDIS - ПРОИЗВОДИТЕЛЬНОСТЬ
+# ==============================================
+redis:
+  enabled: true
+
+  # Redis ресурсы - максимум для кэширования!
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "8Gi"     # 8GB для Redis кэша
+      cpu: "2000m"      # 2 CPU cores
+
+  # Redis Node Placement - ТОЛЬКО СЕЛЕКТОР!
+  nodeSelector:
+    node: pve
+
+# ==============================================
+# OPEN WEBUI ОСНОВНЫЕ НАСТРОЙКИ
+# ==============================================
+# Обновленная версия Open WebUI
 image:
   repository: ghcr.io/open-webui/open-webui
-  tag: "v0.6.12"
+  tag: "v0.6.12"  # Последняя версия
   pullPolicy: "IfNotPresent"
 
-# Namespace
-namespace: ai-infra
+# ⚡ Open WebUI Resources - МАКСИМУМ!
+resources:
+  requests:
+    memory: "4Gi"
+    cpu: "2000m"
+  limits:
+    memory: "16Gi"  # 16GB для Open WebUI
+    cpu: "8000m"    # 8 CPU cores
 
-# Node selection
+# 🏠 Node Placement - ТОЛЬКО СЕЛЕКТОР!
 nodeSelector:
   node: pve
 
-# Tolerations for master node
-tolerations:
-  - key: node-role
-    operator: Equal
-    value: backup
-    effect: NoSchedule
-
-# Resources
-resources:
-  requests:
-    memory: "512Mi"
-    cpu: "250m"
-  limits:
-    memory: "2Gi"
-    cpu: "1000m"
-
-# Persistence
+# 💾 Open WebUI Storage - больше места!
 persistence:
   enabled: true
+  size: 100Gi  # 100GB для файлов, чатов, embeddings
   storageClass: "longhorn-ssd"
-  size: 20Gi
   accessModes:
     - ReadWriteOnce
 
-# Service configuration
+# ==============================================
+# СЕРВИС И СЕТЬ
+# ==============================================
 service:
   type: ClusterIP
-  port: 8080
+  port: 80
+  containerPort: 8080
 
-# Environment variables
-env:
-  OLLAMA_BASE_URL: "http://ollama.ai-infra.svc.cluster.local:11434"
-  WEBUI_SECRET_KEY: "ai-infra-secret-key"
-  WEBUI_AUTH: "false"
+# ==============================================
+# AI КОНФИГУРАЦИЯ
+# ==============================================
+# OpenAI API включен
+enableOpenaiApi: true
 
-# Ingress (правильная структура для Open WebUI chart)
-ingress:
-  enabled: true
-  class: "nginx"
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-  host: "ai.local"
-  tls: false
+# 🔧 Environment Variables для максимальной производительности
+extraEnvVars:
+  # Основные настройки
+  - name: OPENAI_API_KEY
+    value: "0p3n-w3bu!"
 
-# Security context
-securityContext:
-  runAsUser: 1000
-  runAsGroup: 1000
-  fsGroup: 1000
+  # WEBUI Secret Key - ИСПРАВЛЯЕМ ОШИБКУ!
+  - name: WEBUI_SECRET_KEY
+    value: "ai-infra-super-secret-key-96gb-ram-monster"
 
-# Probes
+  # USER_AGENT - убираем warning!
+  - name: USER_AGENT
+    value: "AI-Infra-OpenWebUI/v0.6.12"
+
+  # OLLAMA DEBUG - видим что происходит с моделями!
+  - name: OLLAMA_DEBUG
+    value: "1"
+
+  # ПОДКЛЮЧЕНИЕ К ВСТРОЕННОМУ OLLAMA!
+  - name: OLLAMA_BASE_URL
+    value: "http://open-webui-ollama:11434"
+  - name: ENABLE_OLLAMA_API
+    value: "True"
+
+  # RAG и эмбеддинги
+  - name: RAG_EMBEDDING_ENGINE
+    value: "ollama"
+  - name: RAG_EMBEDDING_MODEL
+    value: "nomic-embed-text"
+
+  # Файлы и загрузки - БОЛЬШИЕ лимиты!
+  - name: ENABLE_RAG_WEB_SEARCH
+    value: "true"
+  - name: ENABLE_RAG_LOCAL_WEB_FETCH
+    value: "true"
+  - name: FILE_SIZE_LIMIT
+    value: "5000"  # 5GB файлы!
+  - name: MAX_FILE_SIZE
+    value: "5368709120"  # 5GB в байтах
+
+  # Безопасность и аутентификация
+  - name: ENABLE_SIGNUP
+    value: "true"
+  - name: DEFAULT_USER_ROLE
+    value: "user"
+
+  # Производительность WebSocket
+  - name: ENABLE_WEBSOCKET_SUPPORT
+    value: "true"
+  - name: WEBSOCKET_MANAGER
+    value: "redis"
+  - name: WEBSOCKET_REDIS_URL
+    value: "redis://open-webui-redis:6379/0"
+
+  # Разрешения пользователей
+  - name: USER_PERMISSIONS_CHAT_DELETION
+    value: "true"
+  - name: USER_PERMISSIONS_CHAT_EDITING
+    value: "true"
+  - name: USER_PERMISSIONS_CHAT_TEMPORARY
+    value: "true"
+
+  # Производительность для больших моделей
+  - name: OLLAMA_REQUEST_TIMEOUT
+    value: "600"  # 10 минут таймаут
+  - name: OLLAMA_KEEP_ALIVE
+    value: "24h"  # Держим модели в памяти 24 часа
+
+# ==============================================
+# БЕЗОПАСНОСТЬ - ИСПРАВЛЕНО ДЛЯ STATIC ФАЙЛОВ!
+# ==============================================
+podSecurityContext:
+  fsGroup: 0  # root group для доступа к файлам
+  runAsNonRoot: false  # разрешаем root
+  runAsUser: 0  # запускаем как root
+
+containerSecurityContext:
+  runAsNonRoot: false  # разрешаем root
+  runAsUser: 0  # запускаем как root
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false  # Разрешаем запись в контейнере!
+  capabilities:
+    drop:
+      - ALL
+
+# ==============================================
+# МОНИТОРИНГ И ПРОВЕРКИ
+# ==============================================
 livenessProbe:
-  enabled: true
   httpGet:
     path: /health
-    port: 8080
-  initialDelaySeconds: 30
-  periodSeconds: 30
+    port: http
+  initialDelaySeconds: 180
+  periodSeconds: 60
+  failureThreshold: 5
 
 readinessProbe:
-  enabled: true
+  httpGet:
+    path: /health/db
+    port: http
+  initialDelaySeconds: 120
+  periodSeconds: 30
+  failureThreshold: 10
+
+startupProbe:
   httpGet:
     path: /health
-    port: 8080
-  initialDelaySeconds: 15
-  periodSeconds: 10 
+    port: http
+  initialDelaySeconds: 60
+  periodSeconds: 15
+  failureThreshold: 40
+
+# ==============================================
+# ДОПОЛНИТЕЛЬНЫЕ СЕРВИСЫ (ОТКЛЮЧЕНЫ)
+# ==============================================
+tika:
+  enabled: false
+
+# ==============================================
+# БАЗА ДАННЫХ - POSTGRESQL!
+# ==============================================
+# Configure database URL для PostgreSQL
+databaseUrl: "postgresql://open-webui:0p3n-w3bu!@open-webui-postgres:5432/open-webui"
+
+# Postgresql configuration  
+postgresql:
+  enabled: true  # ВКЛЮЧАЕМ PostgreSQL!
+  fullnameOverride: open-webui-postgres
+  architecture: standalone
+  auth:
+    database: open-webui
+    postgresPassword: 0p3n-w3bu!
+    username: open-webui
+    password: 0p3n-w3bu!
+  primary:
+    persistence:
+      size: 10Gi  # 10GB для базы данных
+      storageClass: "longhorn-ssd"
+    resources:
+      requests:
+        memory: "1Gi"
+        cpu: "500m"
+      limits:
+        memory: "4Gi"  # 4GB для PostgreSQL
+        cpu: "2000m"   # 2 CPU cores
+    
+    # Node placement
+    nodeSelector:
+      node: pve
+
+# Configure Application logging levels 
+logging:
+  level: "info"  # Логирование для дебаггинга

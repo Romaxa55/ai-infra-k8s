@@ -1,0 +1,70 @@
+# Standalone Ollama Helm Chart Values
+# Backup AI сервис (отдельно от встроенного в Open WebUI)
+# МАКСИМАЛЬНАЯ МОЩНОСТЬ: 96GB RAM + 40 CPU cores
+
+nameOverride: "ollama-standalone"
+fullnameOverride: "ollama-standalone"
+
+# Node selection
+nodeSelector:
+  node: pve
+
+# Runtime class для GPU
+runtimeClassName: nvidia
+
+# Tolerations for master node
+tolerations:
+  - key: node-role
+    operator: Equal
+    value: backup
+    effect: NoSchedule
+
+# Resources для backup Ollama - МАКСИМУМ!
+resources:
+  requests:
+    memory: "4Gi"
+    cpu: "2000m"
+  limits:
+    memory: "64Gi"   # 64GB RAM для standalone
+    cpu: "20000m"    # 20 CPU cores
+
+# Persistence для backup моделей - ОГРОМНЫЙ объем!
+persistence:
+  enabled: true
+  storageClass: "longhorn-ssd"
+  size: 1000Gi  # 1TB для всех моделей!
+  accessModes:
+    - ReadWriteOnce
+
+# Service configuration (другой порт)
+service:
+  type: ClusterIP
+  port: 11435
+
+# Environment variables для максимальной производительности
+env:
+  OLLAMA_HOST: "0.0.0.0"
+  OLLAMA_ORIGINS: "*"
+  OLLAMA_DEBUG: "1"
+  OLLAMA_MAX_LOADED_MODELS: "6"      # 6 моделей одновременно
+  OLLAMA_NUM_PARALLEL: "12"         # 12 параллельных запросов
+  OLLAMA_MAX_QUEUE: "512"           # Большая очередь
+  OLLAMA_FLASH_ATTENTION: "1"       # Быстрое внимание
+  OLLAMA_KV_CACHE_TYPE: "f16"       # Оптимизация кэша
+
+# Health checks
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /
+    port: 11435
+  initialDelaySeconds: 120
+  periodSeconds: 60
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /
+    port: 11435
+  initialDelaySeconds: 60
+  periodSeconds: 30 

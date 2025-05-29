@@ -1,71 +1,80 @@
 #!/bin/bash
 
-echo "🚀 Установка AI Infrastructure через локальные Helm Charts..."
+echo "🚀 Быстрая установка AI Infrastructure - БЕЗ ОЖИДАНИЯ!"
+echo "🎯 Прогоняем все сервисы, потом смотрим в kubectl!"
 
 # Создаем namespace
 echo "📦 Создаем namespace ai-infra..."
 kubectl create namespace ai-infra --dry-run=client -o yaml | kubectl apply -f -
 
-# Устанавливаем MinIO (сначала для S3 storage)
-echo "🗄️ Устанавливаем MinIO..."
-helm upgrade --install minio ./charts/minio \
-  --namespace ai-infra \
-  --values ./charts/minio-values.yaml \
-  --wait --timeout 10m
+# 🤖 Устанавливаем отдельный Ollama (если есть standalone values)
+if [ -f "./charts/ollama-standalone-values.yaml" ]; then
+  echo "🤖 Устанавливаем Standalone Ollama..."
+  helm upgrade --install ollama-standalone ./charts/ollama \
+    --namespace ai-infra \
+    --values ./charts/ollama-standalone-values.yaml
+  echo "✅ Standalone Ollama запущен"
+fi
 
-# Устанавливаем Ollama
-echo "🤖 Устанавливаем Ollama..."
-helm upgrade --install ollama ./charts/ollama \
-  --namespace ai-infra \
-  --values ./charts/ollama-values.yaml \
-  --wait --timeout 10m
-
-# Ждем пока Ollama запустится
-echo "⏳ Ждем запуска Ollama..."
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=ollama -n ai-infra --timeout=300s
-
-# Устанавливаем Open WebUI
-echo "🌐 Устанавливаем Open WebUI..."
+# 🌐 Устанавливаем Open WebUI с встроенным Ollama (МОЩНАЯ КОНФИГУРАЦИЯ!)
+echo "🌐 Устанавливаем Open WebUI с встроенным Ollama..."
 helm upgrade --install open-webui ./charts/open-webui \
   --namespace ai-infra \
-  --values ./charts/open-webui-values.yaml \
-  --wait --timeout 10m
+  --values ./charts/open-webui-values.yaml
 
-# Устанавливаем JupyterHub
+echo "✅ Open WebUI запущен (с 96GB RAM + 40 cores!)"
+
+# 📊 Устанавливаем JupyterHub
 echo "📊 Устанавливаем JupyterHub..."
 helm upgrade --install jupyterhub ./charts/jupyterhub \
   --namespace ai-infra \
-  --values ./charts/jupyterhub-values.yaml \
-  --wait --timeout 15m
+  --values ./charts/jupyterhub-values.yaml
 
-# Устанавливаем MLflow
+echo "✅ JupyterHub запущен"
+
+# 📈 Устанавливаем MLflow
 echo "📈 Устанавливаем MLflow..."
 helm upgrade --install mlflow ./charts/mlflow \
   --namespace ai-infra \
-  --values ./charts/mlflow-values.yaml \
-  --wait --timeout 15m
+  --values ./charts/mlflow-values.yaml
 
-echo "✅ Установка завершена!"
+echo "✅ MLflow запущен"
+
+echo ""
+echo "🎉 ВСЕ СЕРВИСЫ ЗАПУЩЕНЫ В ФОНЕ!"
+echo "🔥 Конфигурация: 96GB RAM + 40 CPU cores + GPU!"
 echo ""
 echo "🎯 Доступные сервисы:"
-echo "   - Ollama: http://ollama.ai-infra.svc.cluster.local:11434"
-echo "   - Open WebUI: http://ai.local"
-echo "   - JupyterHub: http://jupyter.local"
-echo "   - MinIO Console: http://minio.local"
-echo "   - MinIO API: http://minio-api.local"
-echo "   - MLflow: http://mlflow.local"
+echo "   🤖 Embedded Ollama: http://open-webui-ollama:11434 (80GB RAM!)"
+echo "   🌐 Open WebUI: http://ai.local"
+echo "   📊 JupyterHub: http://jupyter.local"
+echo "   📈 MLflow: http://mlflow.local"
 echo ""
 echo "🔑 Учетные данные:"
 echo "   - JupyterHub: любой логин / ai-infra-password"
-echo "   - MinIO: admin / ai-infra-minio-password"
 echo ""
-echo "📋 Проверка статуса:"
-echo "   kubectl get pods -n ai-infra"
-echo "   kubectl get svc -n ai-infra"
-echo "   kubectl get ingress -n ai-infra"
-echo "   kubectl get pvc -n ai-infra"
+echo "📋 КОМАНДЫ ДЛЯ ПРОВЕРКИ СТАТУСА:"
 echo ""
-echo "🤖 Загрузка моделей в Ollama:"
-echo "   kubectl exec -it deployment/ollama -n ai-infra -- ollama pull llama3.2:3b"
-echo "   kubectl exec -it deployment/ollama -n ai-infra -- ollama pull codellama:7b"
-echo "   kubectl exec -it deployment/ollama -n ai-infra -- ollama pull qwen2.5:7b" 
+echo "# Статус всех подов"
+echo "kubectl get pods -n ai-infra"
+echo ""
+echo "# Детальный статус подов"
+echo "kubectl get pods -n ai-infra -o wide"
+echo ""
+echo "# PVC и хранилище"
+echo "kubectl get pvc -n ai-infra"
+echo ""
+echo "# Сервисы"
+echo "kubectl get svc -n ai-infra"
+echo ""
+echo "# Ingress"
+echo "kubectl get ingress -n ai-infra"
+echo ""
+echo "# События (если что-то не работает)"
+echo "kubectl get events -n ai-infra --sort-by=.metadata.creationTimestamp"
+echo ""
+echo "# Следить за статусом в реальном времени"
+echo "watch 'kubectl get pods -n ai-infra'"
+echo ""
+echo "🚀 ГОТОВО! Иди проверяй в kubectl!"
+echo "🔥 Как только поды запустятся - будет МОНСТР AI инфраструктура!"
