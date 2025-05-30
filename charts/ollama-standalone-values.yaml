@@ -19,52 +19,76 @@ tolerations:
     value: backup
     effect: NoSchedule
 
-# Resources для backup Ollama - МАКСИМУМ!
+# Resources для backup Ollama - МАКСИМУМ для GPU!
 resources:
   requests:
-    memory: "4Gi"
-    cpu: "2000m"
+    memory: "32Gi"     # норм для старта, минимум на q4 модели 70B
+    cpu: "8000m"       # 8 ядер на старт, хватит для подготовки
   limits:
-    memory: "64Gi"   # 64GB RAM для standalone
-    cpu: "20000m"    # 20 CPU cores
+    memory: "160Gi"    # можно даже 180, у тебя 200 есть
+    cpu: "60000m"      # все 60 ядер отдаем — пусть молотит
 
 # Persistence для backup моделей - ОГРОМНЫЙ объем!
-persistence:
+persistentVolume:
   enabled: true
   storageClass: "longhorn-ssd"
-  size: 1000Gi  # 1TB для всех моделей!
+  size: 200Gi  # 200GB хватит для кучи моделей!
   accessModes:
     - ReadWriteOnce
 
-# Service configuration (другой порт)
+# Service configuration (стандартный порт Ollama)
 service:
   type: ClusterIP
-  port: 11435
+  port: 11434
 
-# Environment variables для максимальной производительности
-env:
-  OLLAMA_HOST: "0.0.0.0"
-  OLLAMA_ORIGINS: "*"
-  OLLAMA_DEBUG: "1"
-  OLLAMA_MAX_LOADED_MODELS: "6"      # 6 моделей одновременно
-  OLLAMA_NUM_PARALLEL: "12"         # 12 параллельных запросов
-  OLLAMA_MAX_QUEUE: "512"           # Большая очередь
-  OLLAMA_FLASH_ATTENTION: "1"       # Быстрое внимание
-  OLLAMA_KV_CACHE_TYPE: "f16"       # Оптимизация кэша
+ingress:
+  enabled: true
 
-# Health checks
+  # -- IngressClass that will be used to implement the Ingress (Kubernetes 1.18+)
+  className: "nginx"
+
+  # -- Additional annotations for the Ingress resource.
+  annotations: { }
+    # kubernetes.io/ingress.class: traefik
+  # kubernetes.io/ingress.class: nginx
+  # kubernetes.io/tls-acme: "true"
+
+  # The list of hostnames to be covered with this ingress record.
+  hosts:
+    - host: ollama.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+  # --  The tls configuration for hostnames to be covered with this ingress record.
+  tls: [ ]
+  #  - secretName: chart-example-tls
+  #    hosts:
+  #      - chart-example.local
+# Environment variables для МАКСИМАЛЬНОЙ производительности GPU!
+extraEnv:
+  - name: OLLAMA_ORIGINS
+    value: "*"
+  - name: OLLAMA_DEBUG
+    value: "1"
+
+# Health checks - увеличиваем таймауты для GPU инициализации
 livenessProbe:
   enabled: true
   httpGet:
     path: /
-    port: 11435
-  initialDelaySeconds: 120
+    port: 11434
+  initialDelaySeconds: 300          # 5 минут на загрузку модели
   periodSeconds: 60
+  timeoutSeconds: 30
+  failureThreshold: 5
 
 readinessProbe:
   enabled: true
   httpGet:
     path: /
-    port: 11435
-  initialDelaySeconds: 60
-  periodSeconds: 30 
+    port: 11434
+  initialDelaySeconds: 180          # 3 минуты на инициализацию
+  periodSeconds: 30
+  timeoutSeconds: 10
+  failureThreshold: 10
